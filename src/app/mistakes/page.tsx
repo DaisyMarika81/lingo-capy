@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/navbar/Navbar";
 import { Card } from "@/components/ui/Card";
@@ -9,6 +9,7 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { LingoCapy } from "@/components/mascot/LingoCapy";
 import { QuestionRenderer } from "@/components/exercises/QuestionRenderer";
 import { INITIAL_MISTAKES, MistakeItem } from "@/lib/tracking/progress";
+import { createClient } from "@/lib/supabase/client";
 import {
   RotateCcw,
   CheckCircle2,
@@ -21,12 +22,37 @@ import {
 } from "lucide-react";
 
 export default function MistakeReviewPage() {
-  const [mistakes, setMistakes] = useState<MistakeItem[]>(INITIAL_MISTAKES);
+  const [mistakes, setMistakes] = useState<MistakeItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activePracticeIndex, setActivePracticeIndex] = useState<number | null>(null);
   const [practiceAnswer, setPracticeAnswer] = useState<any>(undefined);
   const [practiceResult, setPracticeResult] = useState<any>(null);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      try {
+        if (user) {
+          const { data: userAttempts } = await supabase
+            .from("attempts")
+            .select("id")
+            .eq("user_id", user.id);
+
+          if (userAttempts && userAttempts.length > 0) {
+            setMistakes([]);
+          } else {
+            setMistakes([]);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading mistakes:", err);
+      } finally {
+        setLoading(false);
+      }
+    });
+  }, []);
 
   const filteredMistakes = mistakes.filter((m) => {
     if (selectedCategory === "all") return true;
@@ -34,7 +60,7 @@ export default function MistakeReviewPage() {
   });
 
   const masteredCount = mistakes.filter((m) => m.mastered).length;
-  const progressPct = Math.round((masteredCount / mistakes.length) * 100);
+  const progressPct = mistakes.length > 0 ? Math.round((masteredCount / mistakes.length) * 100) : 100;
 
   const currentPracticeItem =
     activePracticeIndex !== null ? filteredMistakes[activePracticeIndex] : null;
@@ -268,66 +294,94 @@ export default function MistakeReviewPage() {
               </span>
             </div>
 
-            {/* Cards List */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredMistakes.map((item, idx) => (
-                <Card
-                  key={item.id}
-                  className={`p-5 flex flex-col justify-between transition-all hover:shadow-card-lg border-2 ${
-                    item.mastered
-                      ? "border-emerald-200 bg-emerald-50/30"
-                      : "border-capy-border bg-white"
-                  }`}
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-capy-primary bg-indigo-50 px-2.5 py-1 rounded-lg">
-                        {item.unitTitle}
-                      </span>
-                      {item.mastered ? (
-                        <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Đã khắc phục
-                        </span>
-                      ) : (
-                        <span className="text-xs font-bold bg-rose-100 text-rose-800 px-2.5 py-1 rounded-full flex items-center gap-1">
-                          <AlertCircle className="w-3.5 h-3.5" /> Sai {item.wrongCount} lần
-                        </span>
-                      )}
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-ink-500 font-semibold mb-1">
-                        {item.lessonTitle}
-                      </p>
-                      <h4 className="font-bold text-ink-900 text-base leading-snug">
-                        {item.prompt}
-                      </h4>
-                    </div>
-
-                    <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 text-xs text-ink-700 space-y-1">
-                      <p>
-                        <b>💡 Lời giải ngắn gọn:</b> {item.explanation}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="pt-4 mt-2 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-xs font-bold text-ink-500 uppercase">
-                      Dạng: {item.type}
-                    </span>
-                    <Button
-                      variant={item.mastered ? "white" : "cta"}
-                      size="sm"
-                      onClick={() => handleStartPractice(idx)}
-                      className="gap-1.5"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      {item.mastered ? "Luyện lại" : "Làm lại câu này"}
+            {/* Cards List or Empty state */}
+            {filteredMistakes.length === 0 ? (
+              <Card className="py-12 px-6 text-center flex flex-col items-center justify-center gap-4 border-2 border-dashed border-emerald-200 bg-emerald-50/20">
+                <LingoCapy size={80} mood="celebrating" />
+                <div>
+                  <h3 className="font-extrabold text-xl text-ink-900">
+                    Sổ tay đang sạch bóng · Bạn chưa có câu sai nào! 🌟
+                  </h3>
+                  <p className="text-xs text-ink-500 max-w-md mx-auto mt-1">
+                    Khi bạn làm bài tập trên Lingo Capy, các câu chưa đúng sẽ tự động lưu vào đây để bạn luyện lại trước kỳ thi.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 mt-2 flex-wrap justify-center">
+                  <Link href="/lessons/unit-1-lesson-1">
+                    <Button variant="cta" size="sm">
+                      Bắt đầu làm bài tập Unit 1
                     </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setMistakes(INITIAL_MISTAKES)}
+                  >
+                    Luyện thử 4 câu hỏi mẫu
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredMistakes.map((item, idx) => (
+                  <Card
+                    key={item.id}
+                    className={`p-5 flex flex-col justify-between transition-all hover:shadow-card-lg border-2 ${
+                      item.mastered
+                        ? "border-emerald-200 bg-emerald-50/30"
+                        : "border-capy-border bg-white"
+                    }`}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-capy-primary bg-indigo-50 px-2.5 py-1 rounded-lg">
+                          {item.unitTitle}
+                        </span>
+                        {item.mastered ? (
+                          <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Đã khắc phục
+                          </span>
+                        ) : (
+                          <span className="text-xs font-bold bg-rose-100 text-rose-800 px-2.5 py-1 rounded-full flex items-center gap-1">
+                            <AlertCircle className="w-3.5 h-3.5" /> Sai {item.wrongCount} lần
+                          </span>
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="text-xs text-ink-500 font-semibold mb-1">
+                          {item.lessonTitle}
+                        </p>
+                        <h4 className="font-bold text-ink-900 text-base leading-snug">
+                          {item.prompt}
+                        </h4>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 text-xs text-ink-700 space-y-1">
+                        <p>
+                          <b>💡 Lời giải ngắn gọn:</b> {item.explanation}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 mt-2 border-t border-gray-100 flex items-center justify-between">
+                      <span className="text-xs font-bold text-ink-500 uppercase">
+                        Dạng: {item.type}
+                      </span>
+                      <Button
+                        variant={item.mastered ? "white" : "cta"}
+                        size="sm"
+                        onClick={() => handleStartPractice(idx)}
+                        className="gap-1.5"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        {item.mastered ? "Luyện lại" : "Làm lại câu này"}
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>
