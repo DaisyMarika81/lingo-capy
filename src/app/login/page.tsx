@@ -11,7 +11,6 @@ import { Lock, ShieldAlert, KeyRound } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [role, setRole] = useState<"student" | "parent" | "teacher" | "admin">("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,30 +30,19 @@ export default function LoginPage() {
       });
 
       if (error) {
-        // Fallback for mock simulation mode
-        if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("mock-project")) {
-          if (role === "admin" || role === "teacher") {
-            router.push("/admin/dashboard");
-          } else if (role === "parent") {
-            router.push("/parent/dashboard");
-          } else {
-            router.push("/dashboard");
-          }
-          return;
-        }
-        setErrorMessage(`Đăng nhập thất bại: ${error.message}`);
+        setErrorMessage(`Đăng nhập thất bại: ${error.message === "Invalid login credentials" ? "Email hoặc mật khẩu không chính xác." : error.message}`);
         return;
       }
 
       if (data?.user) {
-        // Check user role from profiles
+        // Automatically determine role from profiles or user_metadata
         const { data: profile } = await supabase
           .from("profiles")
           .select("role")
           .eq("id", data.user.id)
           .single<{ role: string }>();
 
-        const userRole = profile?.role || "student";
+        const userRole = profile?.role || (data.user.user_metadata?.role as string) || "student";
         if (userRole === "admin" || userRole === "teacher") {
           router.push("/admin/dashboard");
         } else if (userRole === "parent") {
@@ -63,15 +51,8 @@ export default function LoginPage() {
           router.push("/dashboard");
         }
       }
-    } catch {
-      // Fallback
-      if (role === "admin" || role === "teacher") {
-        router.push("/admin/dashboard");
-      } else if (role === "parent") {
-        router.push("/parent/dashboard");
-      } else {
-        router.push("/dashboard");
-      }
+    } catch (err: any) {
+      setErrorMessage(err?.message || "Đã xảy ra lỗi kết nối khi đăng nhập.");
     } finally {
       setLoading(false);
     }
@@ -111,33 +92,6 @@ export default function LoginPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Role Selection for quick testing/login */}
-          <div>
-            <label className="block text-xs font-bold text-ink-700 uppercase tracking-wider mb-2">
-              Bạn đăng nhập với vai trò:
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { id: "student", label: "Học sinh" },
-                { id: "parent", label: "Phụ huynh" },
-                { id: "admin", label: "Quản trị / GV" },
-              ].map((item) => (
-                <button
-                  type="button"
-                  key={item.id}
-                  onClick={() => setRole(item.id as any)}
-                  className={`py-2 px-2 text-xs font-bold rounded-xl border-2 transition-all ${
-                    role === item.id
-                      ? "border-capy-primary bg-indigo-50 text-capy-primary shadow-sm"
-                      : "border-gray-200 text-ink-500 hover:border-gray-300"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
           <div>
             <label className="block text-xs font-bold text-ink-700 uppercase tracking-wider mb-1.5">
               Email đăng nhập
@@ -147,7 +101,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={role === "admin" ? "admin@lingocapy.edu.vn" : "minhan.nguyen@gmail.com"}
+              placeholder="vidu@lingocapy.edu.vn"
               className="w-full px-4 py-3 rounded-2xl border-2 border-capy-border focus:border-capy-primary focus:outline-none font-medium text-ink-900 transition-colors text-sm"
             />
           </div>
