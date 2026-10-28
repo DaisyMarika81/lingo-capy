@@ -12,7 +12,21 @@ export default function AdminDashboard() {
   const [extractedData, setExtractedData] = useState<any>(null);
   const [filterNeedsReview, setFilterNeedsReview] = useState(false);
   const [publishedStatus, setPublishedStatus] = useState<Record<string, boolean>>({});
-  const [videoId, setVideoId] = useState("bunny_vid_94829");
+  const [videoId, setVideoId] = useState("https://www.youtube.com/watch?v=dQw4w9WgXcQ");
+  const [videoSource, setVideoSource] = useState<"youtube" | "file" | "bunny">("youtube");
+  const [videoSaved, setVideoSaved] = useState(false);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setVideoId(file.name);
+    }
+  };
+
+  const handleSaveVideo = () => {
+    setVideoSaved(true);
+    setTimeout(() => setVideoSaved(false), 3000);
+  };
 
   const handleSimulateExtract = async () => {
     setExtracting(true);
@@ -93,26 +107,118 @@ export default function AdminDashboard() {
           </div>
         </Card>
 
-        {/* Video Linking */}
-        <Card className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-          <div>
-            <b className="text-base text-ink-900 block">Gắn Video bài giảng cho Unit</b>
-            <span className="text-xs text-ink-500">
-              Hỗ trợ Bunny Stream, Cloudflare Stream, Mux hoặc YouTube unlisted ID
-            </span>
+        {/* Video Upload & Linking Manager */}
+        <Card className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E0E7FF] pb-3">
+            <div>
+              <b className="text-lg text-ink-900 block">Gắn Video bài giảng cho Unit</b>
+              <span className="text-xs text-ink-500">
+                Chọn phương thức gắn video phù hợp với bài học
+              </span>
+            </div>
+
+            {/* Source switch pills */}
+            <div className="flex bg-[#EEF2FF] p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setVideoSource("youtube")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  videoSource === "youtube" ? "bg-white text-capy-primary shadow-sm" : "text-ink-500"
+                }`}
+              >
+                Link YouTube
+              </button>
+              <button
+                type="button"
+                onClick={() => setVideoSource("file")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  videoSource === "file" ? "bg-white text-capy-primary shadow-sm" : "text-ink-500"
+                }`}
+              >
+                Upload file MP4
+              </button>
+              <button
+                type="button"
+                onClick={() => setVideoSource("bunny")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  videoSource === "bunny" ? "bg-white text-capy-primary shadow-sm" : "text-ink-500"
+                }`}
+              >
+                Bunny / Cloudflare ID
+              </button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={videoId}
-              onChange={(e) => setVideoId(e.target.value)}
-              placeholder="Nhập video_id hoặc signed URL..."
-              className="flex-1 px-4 py-2.5 rounded-xl border-2 border-capy-border text-sm font-semibold focus:outline-none focus:border-capy-primary"
-            />
-            <Button variant="primary" size="sm">
-              Lưu Video
-            </Button>
-          </div>
+
+          {videoSaved && (
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold animate-in fade-in">
+              ✓ Đã lưu video thành công cho Unit 3 · Bài 2! Học sinh có thể xem ngay trên phòng học.
+            </div>
+          )}
+
+          {videoSource === "youtube" && (
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-ink-700 uppercase">
+                Dán đường link hoặc ID video YouTube (Khuyên dùng chế độ Không công khai - Unlisted):
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={videoId}
+                  onChange={(e) => setVideoId(e.target.value)}
+                  placeholder="Ví dụ: https://www.youtube.com/watch?v=dQw4w9WgXcQ hoặc dQw4w9WgXcQ"
+                  className="flex-1 px-4 py-2.5 rounded-xl border-2 border-capy-border text-sm font-semibold focus:outline-none focus:border-capy-primary"
+                />
+                <Button variant="primary" size="sm" onClick={handleSaveVideo}>
+                  Lưu & Xem thử
+                </Button>
+              </div>
+              <p className="text-[11px] text-ink-500">
+                💡 <b>Mẹo:</b> Tải video bài giảng lên kênh YouTube của bạn, chọn chế độ <b>"Không công khai" (Unlisted)</b> để chỉ học sinh trên web mới xem được, hoàn toàn miễn phí băng thông.
+              </p>
+            </div>
+          )}
+
+          {videoSource === "file" && (
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-ink-700 uppercase">
+                Chọn file video bài giảng (.mp4, .webm) từ máy tính:
+              </label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="file"
+                  accept="video/mp4,video/webm"
+                  onChange={handleFileUpload}
+                  className="text-xs text-ink-700 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-capy-primary hover:file:bg-indigo-100 cursor-pointer"
+                />
+                <Button variant="primary" size="sm" onClick={handleSaveVideo}>
+                  Lưu Video
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {videoSource === "bunny" && (
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-ink-700 uppercase">
+                Nhập Video ID từ Bunny Stream hoặc Cloudflare Stream:
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={videoId}
+                  onChange={(e) => setVideoId(e.target.value)}
+                  placeholder="Ví dụ: bunny_vid_94829 hoặc Cloudflare Stream UID"
+                  className="flex-1 px-4 py-2.5 rounded-xl border-2 border-capy-border text-sm font-semibold focus:outline-none focus:border-capy-primary"
+                />
+                <Button variant="primary" size="sm" onClick={handleSaveVideo}>
+                  Lưu Video
+                </Button>
+              </div>
+              <p className="text-[11px] text-ink-500">
+                Dành cho gói thương mại: Hỗ trợ DRM chống tải lậu, chống quay màn hình và chèn watermark bản quyền.
+              </p>
+            </div>
+          )}
         </Card>
 
         {/* Review & Publish Table */}

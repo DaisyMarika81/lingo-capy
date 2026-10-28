@@ -10,8 +10,20 @@ interface VideoPlayerProps {
   onCompleted?: () => void;
 }
 
+export function extractYouTubeId(urlOrId: string): string | null {
+  if (!urlOrId) return null;
+  const trimmed = urlOrId.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const match = trimmed.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/
+  );
+  return match ? match[1] : null;
+}
+
 export function VideoPlayer({
-  videoId = "lesson-video",
+  videoId = "",
   initialPositionSec = 0,
   onProgressUpdate,
   onCompleted,
@@ -20,6 +32,9 @@ export function VideoPlayer({
   const [currentTime, setCurrentTime] = useState(initialPositionSec);
   const duration = 480; // 8 minutes default
   const [hasCompleted, setHasCompleted] = useState(false);
+
+  const ytId = extractYouTubeId(videoId);
+  const isDirectVideo = videoId.startsWith("http") && (videoId.includes(".mp4") || videoId.includes(".webm"));
 
   // Debounced progress reporting
   useEffect(() => {
@@ -56,6 +71,43 @@ export function VideoPlayer({
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
+  // 1. YouTube Embed Mode
+  if (ytId) {
+    return (
+      <div className="w-full relative aspect-video rounded-3xl overflow-hidden shadow-card border-2 border-capy-border bg-black">
+        <iframe
+          src={`https://www.youtube.com/embed/${ytId}?autoplay=0&rel=0&modestbranding=1`}
+          title="Video bài giảng Lingo Capy"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="w-full h-full border-0"
+        />
+      </div>
+    );
+  }
+
+  // 2. Direct MP4 Video Mode
+  if (isDirectVideo) {
+    return (
+      <div className="w-full relative aspect-video rounded-3xl overflow-hidden shadow-card bg-black">
+        <video
+          src={videoId}
+          controls
+          className="w-full h-full object-contain"
+          onTimeUpdate={(e) => {
+            const v = e.currentTarget;
+            if (v.duration) {
+              const pct = Math.round((v.currentTime / v.duration) * 100);
+              if (onProgressUpdate) onProgressUpdate(pct, Math.round(v.currentTime));
+              if (pct >= 90 && onCompleted) onCompleted();
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
+  // 3. Simulated Demo Player
   return (
     <div className="w-full relative aspect-video bg-gradient-to-br from-[#312E81] to-[#4F46E5] rounded-3xl overflow-hidden shadow-card flex flex-col justify-between p-6 select-none">
       {/* Top watermark / lesson badge */}
