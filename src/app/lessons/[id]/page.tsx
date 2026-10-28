@@ -85,7 +85,7 @@ export default function LessonPage() {
 
   return (
     <div className="min-h-screen bg-[#FFFBF5] flex flex-col">
-      <Navbar user={{ name: "Minh An", role: "student" }} />
+      <Navbar />
 
       <main className="max-w-[1160px] w-full mx-auto px-6 py-4 pb-16 flex flex-wrap gap-6 flex-1">
         {/* Left Column: Lesson Player, Tabs & Content */}

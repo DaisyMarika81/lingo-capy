@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/navbar/Navbar";
 import { Card } from "@/components/ui/Card";
@@ -11,16 +11,8 @@ import {
   Users,
   Search,
   Plus,
-  BookOpen,
-  Calendar,
   Flame,
-  MoreVertical,
-  CheckCircle,
-  XCircle,
-  Clock,
   ShieldAlert,
-  ArrowUpDown,
-  Filter,
   UserCheck,
   KeyRound,
   X,
@@ -40,81 +32,34 @@ interface Student {
   status: "active" | "expired" | "pending";
 }
 
-const INITIAL_STUDENTS: Student[] = [
-  {
-    id: "std-001",
-    name: "Nguyễn Minh An",
-    email: "minhan.nguyen@gmail.com",
-    grade: "Lớp 6",
-    enrolledBook: "Tiếng Anh 6 - Global Success",
-    progressPct: 64,
-    streakDays: 7,
-    lastActive: "10 phút trước",
-    parentName: "Nguyễn Văn Hùng",
-    parentPhone: "0912 345 678",
-    status: "active",
-  },
-  {
-    id: "std-002",
-    name: "Trần Bảo Trân",
-    email: "baotran.tran@gmail.com",
-    grade: "Lớp 7",
-    enrolledBook: "Tiếng Anh 7 - Friends Plus",
-    progressPct: 82,
-    streakDays: 14,
-    lastActive: "Hôm qua, 20:15",
-    parentName: "Lê Thị Mai",
-    parentPhone: "0908 765 432",
-    status: "active",
-  },
-  {
-    id: "std-003",
-    name: "Lê Quốc Huy",
-    email: "quochuy.le@gmail.com",
-    grade: "Lớp 6",
-    enrolledBook: "Tiếng Anh 6 - Global Success",
-    progressPct: 25,
-    streakDays: 1,
-    lastActive: "3 ngày trước",
-    parentName: "Lê Quốc Tuấn",
-    parentPhone: "0983 221 100",
-    status: "active",
-  },
-  {
-    id: "std-004",
-    name: "Phạm Hoàng Yến",
-    email: "hoangyen.pham@gmail.com",
-    grade: "Lớp 8",
-    enrolledBook: "Tiếng Anh 8 - i-Learn Smart World",
-    progressPct: 90,
-    streakDays: 22,
-    lastActive: "Hôm nay, 08:30",
-    parentName: "Phạm Thị Loan",
-    parentPhone: "0934 567 890",
-    status: "active",
-  },
-  {
-    id: "std-005",
-    name: "Đặng Tuấn Kiệt",
-    email: "tuankiet.dang@gmail.com",
-    grade: "Lớp 9",
-    enrolledBook: "Tiếng Anh 9 - Global Success",
-    progressPct: 15,
-    streakDays: 0,
-    lastActive: "1 tuần trước",
-    parentName: "Đặng Văn Nam",
-    parentPhone: "0977 112 233",
-    status: "expired",
-  },
-];
-
 export default function StudentManagementPage() {
-  const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [gradeFilter, setGradeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+
+  // Fetch real students from Supabase
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/admin/students");
+      const data = await res.json();
+      if (res.ok && data.students) {
+        setStudents(data.students);
+      }
+    } catch (err) {
+      console.error("Failed to load students:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
 
   // Form state for adding new student
   const [newStudent, setNewStudent] = useState({
@@ -201,7 +146,7 @@ export default function StudentManagementPage() {
 
   return (
     <div className="min-h-screen bg-[#FFFBF5] flex flex-col">
-      <Navbar user={{ name: "Cô Thuỷ (Admin)", role: "admin" }} />
+      <Navbar />
 
       <main className="max-w-[1180px] w-full mx-auto px-6 py-6 pb-20 flex-1 space-y-6">
         {/* Header Breadcrumb & Actions */}
@@ -346,7 +291,16 @@ export default function StudentManagementPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E0E7FF]">
-                {filteredStudents.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-12 text-ink-500">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="w-8 h-8 border-4 border-capy-primary border-t-transparent rounded-full animate-spin" />
+                        <p className="font-bold text-sm text-ink-700">Đang tải danh sách học viên từ Supabase...</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredStudents.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center py-12 text-ink-500">
                       <div className="flex flex-col items-center justify-center gap-3">

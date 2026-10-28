@@ -9,7 +9,7 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 export default function LandingPage() {
   return (
     <div className="w-full min-h-screen flex flex-col bg-[#FFFBF5]">
-      <Navbar user={null} />
+      <Navbar />
 
       {/* Hero Section */}
       <section className="max-w-[1160px] mx-auto px-6 py-10 md:py-16 flex flex-wrap items-center gap-12">

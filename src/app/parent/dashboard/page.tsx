@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/navbar/Navbar";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { LingoCapy } from "@/components/mascot/LingoCapy";
+import { createClient } from "@/lib/supabase/client";
 import {
   Clock,
   Award,
@@ -26,11 +27,31 @@ import {
 
 export default function ParentDashboardPage() {
   const [selectedChild, setSelectedChild] = useState("minhan");
+  const [childName, setChildName] = useState("Minh An");
+  const [childGrade, setChildGrade] = useState("Lớp 6");
   const [isConsentModalOpen, setIsConsentModalOpen] = useState(false);
   const [kudosSent, setKudosSent] = useState(false);
   const [consentAgreed, setConsentAgreed] = useState(false);
   const [newChildName, setNewChildName] = useState("");
   const [newChildGrade, setNewChildGrade] = useState("Lớp 6");
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) {
+        // Query children linked to this parent
+        const { data: children } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .eq("parent_id", user.id)
+          .returns<{ id: string; full_name: string }[]>();
+
+        if (children && children.length > 0) {
+          setChildName(children[0].full_name || "Bé");
+        }
+      }
+    });
+  }, []);
 
   // Daily study minutes for the week
   const weeklyStudyData = [
@@ -68,7 +89,7 @@ export default function ParentDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#FFFBF5] flex flex-col">
-      <Navbar user={{ name: "Bố Minh An (Phụ huynh)", role: "parent" }} />
+      <Navbar />
 
       <main className="max-w-[1160px] w-full mx-auto px-6 py-6 pb-20 flex-1 space-y-6">
         {/* Top Header: Child Switcher & Actions */}
@@ -81,7 +102,7 @@ export default function ParentDashboardPage() {
             </div>
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-extrabold text-ink-900 tracking-tight">
-                Tiến độ học tập của Minh An
+                Tiến độ học tập của {childName}
               </h1>
               <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full">
                 Lớp 6 · Đang tích cực

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/navbar/Navbar";
 import { LingoCapy } from "@/components/mascot/LingoCapy";
@@ -8,30 +8,56 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { INITIAL_BADGES, Badge } from "@/lib/tracking/progress";
+import { createClient } from "@/lib/supabase/client";
 import { Flame, CheckCircle, Trophy, BookOpen, AlertCircle, ArrowRight, X } from "lucide-react";
 
 export default function StudentDashboard() {
   const [showBadgeModal, setShowBadgeModal] = useState(false);
+  const [userName, setUserName] = useState("bạn");
+  const [streakDays, setStreakDays] = useState(0);
   const badges: Badge[] = INITIAL_BADGES;
 
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name, streak_days")
+          .eq("id", user.id)
+          .single<{ full_name: string; streak_days: number }>();
+
+        if (profile?.full_name) {
+          const parts = profile.full_name.trim().split(" ");
+          setUserName(parts[parts.length - 1]);
+        } else if (user.email) {
+          setUserName(user.email.split("@")[0]);
+        }
+        if (profile?.streak_days !== undefined) {
+          setStreakDays(profile.streak_days);
+        }
+      }
+    });
+  }, []);
+
   const weekStreak = [
-    { day: "T2", active: true },
-    { day: "T3", active: true },
-    { day: "T4", active: true },
-    { day: "T5", active: true },
-    { day: "T6", active: true },
-    { day: "T7", active: true },
+    { day: "T2", active: streakDays >= 6 },
+    { day: "T3", active: streakDays >= 5 },
+    { day: "T4", active: streakDays >= 4 },
+    { day: "T5", active: streakDays >= 3 },
+    { day: "T6", active: streakDays >= 2 },
+    { day: "T7", active: streakDays >= 1 },
     { day: "CN", active: true, today: true },
   ];
 
   return (
     <div className="min-h-screen bg-[#FFFBF5] flex flex-col">
-      <Navbar user={{ name: "Minh An", role: "student" }} />
+      <Navbar />
 
       <main className="max-w-[1160px] w-full mx-auto px-6 py-6 pb-20 flex-1 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <h1 className="text-3xl md:text-[34px] font-extrabold text-ink-900 tracking-tight">
-            Chào An, hôm nay học gì nào?
+            Chào {userName}, hôm nay học gì nào?
           </h1>
           <Link href="/mistakes">
             <span className="btn-3d text-xs font-bold px-3 py-1.5 rounded-xl btn-white flex items-center gap-1.5">
@@ -67,11 +93,11 @@ export default function StudentDashboard() {
               <div className="flex items-center justify-between">
                 <p className="text-ink-500 font-bold text-xs uppercase tracking-wider">Chuỗi ngày học</p>
                 <span className="text-xs bg-amber-100 text-[#B45309] font-bold px-2 py-0.5 rounded-full">
-                  Kỷ lục: 7 ngày
+                  {streakDays > 0 ? `Kỷ lục: ${streakDays} ngày` : "Khởi động ngay"}
                 </span>
               </div>
               <p className="text-4xl md:text-[40px] font-extrabold text-[#B45309] my-1">
-                7 ngày 🔥
+                {streakDays} ngày 🔥
               </p>
             </div>
 

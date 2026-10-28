@@ -110,7 +110,7 @@ export default function MistakeReviewPage() {
 
   return (
     <div className="min-h-screen bg-[#FFFBF5] flex flex-col">
-      <Navbar user={{ name: "Minh An", role: "student" }} />
+      <Navbar />
 
       <main className="max-w-[1160px] w-full mx-auto px-6 py-6 pb-20 flex-1 space-y-6">
         {/* Breadcrumb & Navigation */}

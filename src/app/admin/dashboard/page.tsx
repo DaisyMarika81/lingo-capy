@@ -51,7 +51,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-[#FFFBF5] flex flex-col">
-      <Navbar user={{ name: "Cô Thuỷ (Admin)", role: "admin" }} />
+      <Navbar />
 
       <main className="max-w-[1160px] w-full mx-auto px-6 py-6 pb-16 flex-1 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-4">
@@ -67,11 +67,6 @@ export default function AdminDashboard() {
             <Link href="/admin/students">
               <Button variant="primary" size="sm">
                 Quản lý học viên
-              </Button>
-            </Link>
-            <Link href="/dashboard">
-              <Button variant="white" size="sm">
-                Xem giao diện học sinh
               </Button>
             </Link>
           </div>
