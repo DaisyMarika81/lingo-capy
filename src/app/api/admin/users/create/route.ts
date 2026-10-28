@@ -15,30 +15,6 @@ export async function POST(req: NextRequest) {
 
     const tempPassword = password || `Lingo@${Math.floor(100000 + Math.random() * 900000)}`;
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const isMock = !supabaseUrl || supabaseUrl.includes("mock-project");
-
-    if (isMock) {
-      // Demo / Simulation mode
-      return NextResponse.json({
-        success: true,
-        isMock: true,
-        user: {
-          id: `usr_${Date.now().toString().slice(-6)}`,
-          email,
-          name,
-          role: "student",
-          grade,
-          enrolledBook,
-          tempPassword,
-          parentName: parentName || "Chưa cập nhật",
-          parentPhone: parentPhone || "Chưa cập nhật",
-          created_at: new Date().toISOString(),
-        },
-        message: "Tài khoản học viên đã được tạo thành công (Chế độ mô phỏng).",
-      });
-    }
-
     // Real Supabase Provisioning with Service Role
     const supabaseAdmin = createAdminClient();
 
@@ -51,6 +27,9 @@ export async function POST(req: NextRequest) {
         role: "student",
         full_name: name,
         grade,
+        enrolledBook,
+        parentName: parentName || "Chưa cập nhật",
+        parentPhone: parentPhone || "Chưa cập nhật",
       },
     });
 

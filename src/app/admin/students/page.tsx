@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { LingoCapy } from "@/components/mascot/LingoCapy";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { createClient } from "@/lib/supabase/client";
 import {
   Users,
   Search,
@@ -45,7 +46,17 @@ export default function StudentManagementPage() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/admin/students");
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const headers: Record<string, string> = {};
+      if (session?.access_token) {
+        headers["Authorization"] = `Bearer ${session.access_token}`;
+      }
+
+      const res = await fetch("/api/admin/students", { headers });
       const data = await res.json();
       if (res.ok && data.students) {
         setStudents(data.students);
@@ -113,6 +124,7 @@ export default function StudentManagementPage() {
 
       setStudents([created, ...students]);
       setIsModalOpen(false);
+      fetchStudents();
       setCreatedCredentials({
         name: newStudent.name,
         email: newStudent.email,
