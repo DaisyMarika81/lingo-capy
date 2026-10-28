@@ -76,11 +76,12 @@ export function Navbar({ user: initialUser }: NavbarProps) {
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
+      await fetch("/api/auth/logout", { method: "POST" });
     } catch (e) {
       console.warn("Signout error:", e);
     }
     setCurrentUser(null);
-    router.push("/login");
+    window.location.href = "/login";
   };
 
   const role = currentUser?.role;

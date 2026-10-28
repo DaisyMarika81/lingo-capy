@@ -58,8 +58,19 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
 
     checkStudentAuth();
 
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session) {
+        setAuthorized(false);
+        setLoading(true);
+        window.location.href = "/login";
+      }
+    });
+
     return () => {
       isMounted = false;
+      subscription.unsubscribe();
     };
   }, [router]);
 
