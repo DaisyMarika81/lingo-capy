@@ -2,9 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { Play, Pause } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 interface VideoPlayerProps {
   videoId?: string;
+  studentName?: string;
+  studentGrade?: string;
   initialPositionSec?: number;
   onProgressUpdate?: (watchedPct: number, lastPositionSec: number) => void;
   onCompleted?: () => void;
@@ -24,6 +27,8 @@ export function extractYouTubeId(urlOrId: string): string | null {
 
 export function VideoPlayer({
   videoId = "",
+  studentName: propStudentName,
+  studentGrade: propStudentGrade,
   initialPositionSec = 0,
   onProgressUpdate,
   onCompleted,
@@ -32,9 +37,40 @@ export function VideoPlayer({
   const [currentTime, setCurrentTime] = useState(initialPositionSec);
   const duration = 480; // 8 minutes default
   const [hasCompleted, setHasCompleted] = useState(false);
+  const [studentInfo, setStudentInfo] = useState<{ name: string; grade: string }>({
+    name: propStudentName || "",
+    grade: propStudentGrade || "Lớp 6",
+  });
+
+  // Fetch current user if not provided in props
+  useEffect(() => {
+    if (propStudentName) {
+      setStudentInfo({
+        name: propStudentName,
+        grade: propStudentGrade || "Lớp 6",
+      });
+      return;
+    }
+
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        const name =
+          user.user_metadata?.full_name ||
+          user.email?.split("@")[0] ||
+          "Học viên";
+        const grade = user.user_metadata?.grade || "Lớp 6";
+        setStudentInfo({ name, grade });
+      } else {
+        setStudentInfo({ name: "Học viên Lingo Capy", grade: "Lớp 6" });
+      }
+    });
+  }, [propStudentName, propStudentGrade]);
 
   const ytId = extractYouTubeId(videoId);
-  const isDirectVideo = videoId.startsWith("http") && (videoId.includes(".mp4") || videoId.includes(".webm"));
+  const isDirectVideo =
+    videoId.startsWith("http") &&
+    (videoId.includes(".mp4") || videoId.includes(".webm"));
 
   // Debounced progress reporting
   useEffect(() => {
@@ -75,6 +111,10 @@ export function VideoPlayer({
   if (ytId) {
     return (
       <div className="w-full relative aspect-video rounded-3xl overflow-hidden shadow-card border-2 border-capy-border bg-black">
+        {/* Dynamic Watermark overlay */}
+        <div className="absolute top-3 right-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-white/90 text-xs font-semibold pointer-events-none select-none">
+          {studentInfo.name ? `${studentInfo.name} · ${studentInfo.grade}` : "Lingo Capy Player"}
+        </div>
         <iframe
           src={`https://www.youtube.com/embed/${ytId}?autoplay=0&rel=0&modestbranding=1`}
           title="Video bài giảng Lingo Capy"
@@ -90,6 +130,9 @@ export function VideoPlayer({
   if (isDirectVideo) {
     return (
       <div className="w-full relative aspect-video rounded-3xl overflow-hidden shadow-card bg-black">
+        <div className="absolute top-3 right-4 z-10 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-white/90 text-xs font-semibold pointer-events-none select-none">
+          {studentInfo.name ? `${studentInfo.name} · ${studentInfo.grade}` : "Lingo Capy Player"}
+        </div>
         <video
           src={videoId}
           controls
@@ -110,12 +153,14 @@ export function VideoPlayer({
   // 3. Simulated Demo Player
   return (
     <div className="w-full relative aspect-video bg-gradient-to-br from-[#312E81] to-[#4F46E5] rounded-3xl overflow-hidden shadow-card flex flex-col justify-between p-6 select-none">
-      {/* Top watermark / lesson badge */}
+      {/* Top watermark / lesson badge - DYNAMIC STUDENT NAME */}
       <div className="flex justify-between items-center text-white/80 text-xs font-semibold">
         <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">
           Lingo Capy Player · HD 1080p
         </span>
-        <span>Minh An · Lớp 6</span>
+        <span className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-white font-bold">
+          {studentInfo.name ? `${studentInfo.name} · ${studentInfo.grade}` : "Lingo Capy · Lớp 6"}
+        </span>
       </div>
 
       {/* Center Play/Pause CTA Button */}

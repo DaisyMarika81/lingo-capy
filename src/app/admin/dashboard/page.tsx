@@ -163,6 +163,15 @@ export default function AdminDashboard() {
       })
     );
 
+    // Persist to localStorage so student lessons immediately sync with this video
+    try {
+      localStorage.setItem(`lingo_admin_video_${selectedUnitId}`, videoId);
+      const normalizedUnitId = selectedUnitId.replace(/^u(\d+)$/, "unit-$1");
+      localStorage.setItem(`lingo_admin_video_${normalizedUnitId}`, videoId);
+    } catch (e) {
+      console.warn("Could not save video to localStorage", e);
+    }
+
     setVideoSavedInfo(
       `✓ Đã gắn video thành công cho [${currentBook.title}] ➔ [${currentUnit.code}: ${currentUnit.name}] ➔ [${currentLesson.name}]`
     );
